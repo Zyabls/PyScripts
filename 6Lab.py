@@ -1,6 +1,6 @@
 import sys
 import pandas as pd
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QFileDialog, QComboBox, QLabel
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QFileDialog, QComboBox, QLabel, QLineEdit, QHBoxLayout
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
@@ -39,6 +39,18 @@ class DataAnalysisApp(QWidget):
         # Поле для отображения графиков
         self.canvas = FigureCanvas(Figure(figsize=(8, 6)))
         layout.addWidget(self.canvas)
+
+        # Добавление нового значения
+        input_layout = QHBoxLayout()
+        self.new_value_input = QLineEdit(self)
+        self.new_value_input.setPlaceholderText('Введите новое значение (Date, Value1, Value2)')
+        input_layout.addWidget(self.new_value_input)
+
+        self.add_button = QPushButton('Добавить новое значение', self)
+        self.add_button.clicked.connect(self.add_new_value)
+        input_layout.addWidget(self.add_button)
+
+        layout.addLayout(input_layout)
 
         # Установка главного layout
         self.setLayout(layout)
@@ -89,7 +101,7 @@ class DataAnalysisApp(QWidget):
 
                     # Уменьшаем частоту отображения меток оси X
                     date_labels = self.data['Date']
-                    step = len(date_labels) // 6  # Показываем 20 меток на оси X
+                    step = len(date_labels) // 6  # Показываем 6 меток на оси X
                     ax.set_xticks(date_labels[::step])  # Отображаем метки через 'step'
 
                     # Поворот меток оси X для улучшения читаемости
@@ -112,6 +124,35 @@ class DataAnalysisApp(QWidget):
 
             # Обновляем отображение
             self.canvas.draw()
+
+    def add_new_value(self):
+        # Получаем ввод от пользователя
+        new_value = self.new_value_input.text()
+
+        if new_value:
+            # Преобразуем ввод в список значений
+            values = new_value.split(',')
+
+            if len(values) == 3:  # Ожидаем 3 значения для Date, Value1 и Value2
+                new_data = {
+                    'Date': [values[0].strip()],
+                    'Value1': [float(values[1].strip())],
+                    'Value2': [float(values[2].strip())]
+                }
+
+                new_df = pd.DataFrame(new_data)
+
+                # Добавляем новые данные в существующий DataFrame
+                self.data = pd.concat([self.data, new_df], ignore_index=True)
+
+                # Обновляем график
+                self.plot_data()
+
+                # Очищаем поле ввода
+                self.new_value_input.clear()
+
+            else:
+                self.stats_label.setText('Введите данные в формате: Date, Value1, Value2')
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
